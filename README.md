@@ -2,7 +2,7 @@
 
 This might look homophobic, but it's really not
 
-This repo is a fork of [Pdrsky Bot][https://github.com/davi9091/pdrsky_city_bot] bot rewritten in Rust to increase performance and have some fun
+This repo is a fork of [Pdrsky Bot](https://github.com/davi9091/pdrsky_city_bot) rewritten in Rust to increase performance and have some fun
 
 
 ## Install
