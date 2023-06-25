@@ -41,6 +41,15 @@ fn fold_join(acc: String, v: String) -> String {
 
 type MatchPatternArray = [MatchPattern; 3];
 
+fn get_praise_pattern() -> Regex {
+    return Regex::new(r"^(молодец|спасибо|хороший\sбот|thanks|good\sbot)").unwrap();
+}
+
+fn test_for_praise(text: &str, praise_pattern: Regex) -> bool {
+    let match_text = praise_pattern.find(text);
+    match_text.is_some()
+}
+
 fn handle_text(text: &str, patterns: &MatchPatternArray) -> String {
     patterns
         .iter()
@@ -98,6 +107,8 @@ async fn main() -> Result<(), Error> {
     let api = Api::new(token);
     let patterns = get_patterns();
 
+    let me = api.send(GetMe).await?;
+
     let mut stream = api.stream();
     while let Some(update_unwrapped) = stream.next().await {
         let Ok(update) = update_unwrapped else {
@@ -105,13 +116,25 @@ async fn main() -> Result<(), Error> {
             continue;
         };
 
-        if let UpdateKind::Message(message) = update.kind {
+        if let UpdateKind::Message(ref message) = update.kind {
             if let MessageKind::Text { ref data, .. } = message.kind {
+                match message.reply_to_message.clone() {
+                    Some(reply) => match *reply {
+                        MessageOrChannelPost::Message(replied_to) => {
+                            if replied_to.from == me && test_for_praise(data, get_praise_pattern())
+                            {
+                                api.send(message.text_reply("🥰")).await?;
+                            }
+                        }
+                        _ => (),
+                    },
+                    None => (),
+                };
+
                 let answer = handle_text(data, &patterns);
                 if answer != String::from("") {
                     api.send(message.text_reply(handle_text(data, &patterns)))
                         .await?;
-                    println!("<{}>: {}, {}", &message.from.first_name, data, answer);
                 } else {
                     ()
                 };
